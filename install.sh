@@ -16,19 +16,27 @@ USER_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 APP_DIR=$(pwd)
 
 # Check if Spotipy.csproj is present in the current directory.
-# If this script is run directly via curl, files won't be local, so we clone them first.
+# If this script is run directly via curl, files won't be local, so we download the release zip first.
 if [ ! -f "Spotipy.csproj" ]; then
   echo "Projektdateien wurden nicht lokal gefunden."
-  echo "Klone das Spotipy-Repository von GitHub für Benutzer $REAL_USER..."
+  echo "Lade das Spotipy-Release von GitHub für Benutzer $REAL_USER herunter..."
   
-  # Ensure git is installed
-  apt-get install -y git
+  # Ensure wget and unzip are installed
+  apt-get install -y wget unzip
   
   # Clean up existing dir if present
   rm -rf "$USER_HOME/Spotipy"
+  mkdir -p "$USER_HOME/Spotipy/publish"
   
-  # Clone as the real user
-  su - "$REAL_USER" -c "git clone https://github.com/kruemmel2704/Spotipy.git \"$USER_HOME/Spotipy\""
+  # Download release ZIP
+  wget -q --show-progress -O "$USER_HOME/Spotipy/Spotipy.zip" "https://github.com/kruemmel2704/Spotipy/releases/latest/download/Spotipy.zip"
+  
+  # Extract directly to the publish directory
+  unzip -o -q "$USER_HOME/Spotipy/Spotipy.zip" -d "$USER_HOME/Spotipy/publish"
+  rm -f "$USER_HOME/Spotipy/Spotipy.zip"
+  
+  # Adjust ownership
+  chown -R "$REAL_USER":"$REAL_USER" "$USER_HOME/Spotipy"
   
   # Update paths
   APP_DIR="$USER_HOME/Spotipy"

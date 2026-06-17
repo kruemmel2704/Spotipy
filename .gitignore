@@ -1,6 +1,7 @@
 # Ignore C# build directories
 bin/
 obj/
+*.zip
 
 # Ignore local secret files
 .env
