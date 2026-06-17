@@ -55,16 +55,16 @@ echo "3. Konfiguriere Audio-Ausgang auf Klinkenbuchse (AudioJack)..."
 # On modern Pi OS Bookworm with Pipewire, this is fallback but useful.
 amixer cset numid=3 1 || true
 
-# 4. Install .NET 8 SDK (required to build the project)
-echo "4. Installiere .NET 8 SDK systemweit..."
-# Check if dotnet SDK works, if not install it
-if ! command -v dotnet &> /dev/null || ! dotnet --list-sdks &> /dev/null; then
+# 4. Install ASP.NET Core 8 Runtime system-wide
+echo "4. Installiere .NET 8 ASP.NET Core Runtime systemweit..."
+# Check if dotnet runtime works, if not install it
+if ! command -v dotnet &> /dev/null || ! dotnet --list-runtimes &> /dev/null; then
   echo "Lade .NET Installationsskript herunter..."
   curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
   chmod +x dotnet-install.sh
   
-  echo "Installiere .NET 8 SDK systemweit..."
-  ./dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet
+  echo "Installiere .NET 8 ASP.NET Core Runtime systemweit..."
+  ./dotnet-install.sh --channel 8.0 --runtime aspnetcore --install-dir /usr/share/dotnet
   
   # Create symlink so dotnet is globally accessible
   rm -f /usr/bin/dotnet
@@ -72,7 +72,7 @@ if ! command -v dotnet &> /dev/null || ! dotnet --list-sdks &> /dev/null; then
   echo ".NET erfolgreich unter /usr/bin/dotnet verlinkt."
   rm -f dotnet-install.sh
 else
-  echo ".NET SDK ist bereits installiert und funktionsfähig."
+  echo ".NET Runtime ist bereits installiert und funktionsfähig."
 fi
 
 # 5. Download and install Librespot
@@ -103,11 +103,10 @@ if systemctl is-enabled --quiet raspotify.service 2>/dev/null; then
   systemctl disable raspotify.service || true
 fi
 
-# 6. Publish C# Web Application
-echo "6. Kompiliere C# Projekt (Publishing)..."
-# Change ownership back temporarily so build succeeds under correct user
-chown -R "$REAL_USER":"$REAL_USER" "$APP_DIR"
-su - "$REAL_USER" -c "cd $APP_DIR && dotnet publish -c Release -r linux-$(if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then echo "arm64"; else echo "arm"; fi) --self-contained false -o publish"
+# 6. Set execute permissions for publish directory
+echo "6. Bereite veröffentlichte Anwendungsdateien vor..."
+chown -R "$REAL_USER":"$REAL_USER" "$APP_DIR/publish"
+chmod +x "$APP_DIR/publish/Spotipy.dll" || true
 
 # 7. Setup Autostart via .bashrc (replacing systemd)
 echo "7. Richte Autostart über .bashrc ein..."

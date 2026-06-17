@@ -1,7 +1,6 @@
 # Ignore C# build directories
 bin/
 obj/
-publish/
 
 # Ignore local secret files
 .env

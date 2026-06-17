@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotipy Controller</title>
+    <!-- SignalR Client Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <link rel="stylesheet" href="/css/shared.css">
+    <link rel="stylesheet" href="/css/controller.css">
+</head>
+<body>
+    <!-- Animated background gradients -->
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+
+    <div class="container">
+        <!-- Header / Status Bar -->
+        <header class="header glass-panel">
+            <div class="status-indicator">
+                <span class="status-dot" id="status-dot"></span>
+                <span id="status-text">Lade Status...</span>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="btn-qr" title="Teilen (QR Code)">
+                    <!-- QR Code Icon -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm4-2h2v2h-2zm0-2h2v2h-2zm2 4h-2v2h2zM14 20h2v2h-2z"/></svg>
+                </button>
+                <button class="icon-btn" id="btn-config" title="Einstellungen">
+                    <!-- Config/Gear Icon -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Player Card -->
+        <main class="player-card glass-panel">
+            <!-- Auth Warning (Hidden by default) -->
+            <div id="auth-banner" class="auth-banner" style="display: none;">
+                <p>Spotify-Konto nicht verknüpft.</p>
+                <button class="login-btn" id="btn-login">Mit Spotify verbinden</button>
+            </div>
+
+            <!-- Cover Art with Glowing Background shadow -->
+            <div class="cover-container">
+                <div class="cover-glow" id="cover-glow-bg"></div>
+                <img src="/img/default_cover.png" alt="Album Cover" id="album-cover" class="album-cover">
+            </div>
+
+            <!-- Song details -->
+            <div class="track-info">
+                <h1 id="track-title" class="title">Warte auf Verbindung</h1>
+                <p id="track-artist" class="artist">Spotify Connect bereit</p>
+                <p id="track-album" class="album"></p>
+                
+                <!-- Jam session tag -->
+                <div id="jam-indicator" class="jam-badge" style="display: none;">
+                    <span class="jam-pulse"></span> Spotify Jam Aktiv
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-section">
+                <span class="time-label" id="time-current">00:00</span>
+                <div class="progress-wrapper">
+                    <input type="range" id="progress-slider" min="0" max="100" value="0">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <span class="time-label" id="time-duration">00:00</span>
+            </div>
+
+            <!-- Playback Controls -->
+            <div class="controls-section">
+                <button class="control-btn" id="btn-prev" title="Zurück">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><rect x="5" y="4" width="2" height="16"/></svg>
+                </button>
+                <button class="control-btn play-btn" id="btn-play" title="Wiedergabe / Pause">
+                    <svg viewBox="0 0 24 24" fill="currentColor" id="play-icon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" id="pause-icon" style="display: none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <button class="control-btn" id="btn-next" title="Weiter">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><rect x="17" y="4" width="2" height="16"/></svg>
+                </button>
+            </div>
+
+            <!-- Volume Control -->
+            <div class="volume-section">
+                <button class="icon-btn volume-btn" id="btn-mute">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="volume-icon-high"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="volume-icon-mute" style="display: none;"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                </button>
+                <div class="volume-slider-wrapper">
+                    <input type="range" id="volume-slider" min="0" max="100" value="50">
+                    <div class="volume-fill" id="volume-fill"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Spotify Developer Config Modal -->
+    <div id="modal-config" class="modal">
+        <div class="modal-content glass-panel">
+            <h2>Spotify API Setup</h2>
+            <p class="modal-desc">Gib die Zugangsdaten deiner Spotify Developer Application ein. Du erhältst sie im Spotify Developer Dashboard.</p>
+            <div class="input-group">
+                <label for="cfg-client-id">Client ID</label>
+                <input type="text" id="cfg-client-id" placeholder="Kopiere Client ID von Spotify">
+            </div>
+            <div class="input-group">
+                <label for="cfg-client-secret">Client Secret</label>
+                <input type="password" id="cfg-client-secret" placeholder="Kopiere Client Secret von Spotify">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btn-config-close">Abbrechen</button>
+                <button class="btn btn-primary" id="btn-config-save">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Sharing Modal -->
+    <div id="modal-qr" class="modal">
+        <div class="modal-content glass-panel qr-modal-content">
+            <h2>Scanner zum Steuern</h2>
+            <p class="modal-desc">Scanne diesen QR-Code, um die Steuerung auf einem anderen Gerät (z.B. Handy) zu öffnen.</p>
+            <div class="qr-container">
+                <img id="qr-image" src="" alt="Fernbedienung QR Code">
+            </div>
+            <p id="qr-url" class="qr-url-text"></p>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="btn-qr-close">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/shared.js"></script>
+    <script src="/js/controller.js"></script>
+</body>
+</html>
