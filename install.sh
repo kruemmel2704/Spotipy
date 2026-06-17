@@ -15,6 +15,26 @@ REAL_USER=${SUDO_USER:-$USER}
 USER_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 APP_DIR=$(pwd)
 
+# Check if Spotipy.csproj is present in the current directory.
+# If this script is run directly via curl, files won't be local, so we clone them first.
+if [ ! -f "Spotipy.csproj" ]; then
+  echo "Projektdateien wurden nicht lokal gefunden."
+  echo "Klone das Spotipy-Repository von GitHub für Benutzer $REAL_USER..."
+  
+  # Ensure git is installed
+  apt-get install -y git
+  
+  # Clean up existing dir if present
+  rm -rf "$USER_HOME/Spotipy"
+  
+  # Clone as the real user
+  su - "$REAL_USER" -c "git clone https://github.com/kruemmel2704/Spotipy.git \"$USER_HOME/Spotipy\""
+  
+  # Update paths
+  APP_DIR="$USER_HOME/Spotipy"
+  cd "$APP_DIR"
+fi
+
 echo "===================================================="
 echo " Starting Spotipy Connect Client Installation..."
 echo " Running directory: $APP_DIR"
