@@ -63,17 +63,13 @@ if ! command -v dotnet &> /dev/null || ! dotnet --list-runtimes &> /dev/null; th
   curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
   chmod +x dotnet-install.sh
   
-  # Install runtime as system-wide or user-wide
-  # We install for the real user, then symlink system-wide
-  echo "Installiere .NET 8 Runtime..."
-  su - "$REAL_USER" -c "bash $APP_DIR/dotnet-install.sh --channel 8.0 --runtime aspnetcore"
+  echo "Installiere .NET 8 Runtime systemweit..."
+  ./dotnet-install.sh --channel 8.0 --runtime aspnetcore --install-dir /usr/share/dotnet
   
   # Create symlink so dotnet is globally accessible
   rm -f /usr/bin/dotnet
-  if [ -d "$USER_HOME/.dotnet" ]; then
-    ln -sf "$USER_HOME/.dotnet/dotnet" /usr/bin/dotnet
-    echo ".NET erfolgreich unter /usr/bin/dotnet verlinkt."
-  fi
+  ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
+  echo ".NET erfolgreich unter /usr/bin/dotnet verlinkt."
   rm -f dotnet-install.sh
 else
   echo ".NET ist bereits installiert und funktionsfähig."
