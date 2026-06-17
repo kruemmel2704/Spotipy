@@ -106,34 +106,51 @@ echo "6. Kompiliere C# Projekt (Publishing)..."
 chown -R "$REAL_USER":"$REAL_USER" "$APP_DIR"
 su - "$REAL_USER" -c "cd $APP_DIR && dotnet publish -c Release -r linux-$(if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then echo "arm64"; else echo "arm"; fi) --self-contained false -o publish"
 
-# 7. Setup Systemd Service
-echo "7. Erstelle Autostart-Dienst (systemd)..."
-SERVICE_FILE="/etc/systemd/system/spotipy.service"
+# 7. Setup Autostart via .bashrc (replacing systemd)
+echo "7. Richte Autostart über .bashrc ein..."
 
-cat <<EOF > "$SERVICE_FILE"
-[Unit]
-Description=Spotipy Connect Client and Web Service
-After=network.target
+# Clean up systemd if it was previously installed
+if systemctl is-active --quiet spotipy.service 2>/dev/null; then
+  systemctl stop spotipy.service || true
+fi
+if systemctl is-enabled --quiet spotipy.service 2>/dev/null; then
+  systemctl disable spotipy.service || true
+fi
+rm -f /etc/systemd/system/spotipy.service
+systemctl daemon-reload 2>/dev/null || true
 
-[Service]
-WorkingDirectory=$APP_DIR/publish
-ExecStart=/usr/bin/dotnet $APP_DIR/publish/Spotipy.dll
-Restart=always
-RestartSec=10
-KillSignal=SIGINT
-SyslogIdentifier=spotipy
-User=$REAL_USER
-Environment=ASPNETCORE_ENVIRONMENT=Production
+# Create background run script
+RUN_SCRIPT="$APP_DIR/run.sh"
+echo "Erstelle Run-Skript unter: $RUN_SCRIPT"
 
-[Install]
-WantedBy=multi-user.target
+cat <<EOF > "$RUN_SCRIPT"
+#!/usr/bin/env bash
+# Guard against multiple instances
+if pgrep -f "Spotipy.dll" > /dev/null; then
+    exit 0
+fi
+
+# Go to publish directory and run in background
+cd "$APP_DIR/publish"
+export PATH="\$PATH:\$HOME/.dotnet"
+nohup /usr/bin/dotnet Spotipy.dll > /dev/null 2>&1 &
 EOF
 
-# Reload and enable service
-systemctl daemon-reload
-systemctl enable spotipy.service
-systemctl start spotipy.service
-echo "Spotipy-Systemd-Dienst gestartet und für automatischen Systemstart aktiviert."
+chmod +x "$RUN_SCRIPT"
+chown "$REAL_USER":"$REAL_USER" "$RUN_SCRIPT"
+
+# Register in user's .bashrc
+BASHRC="$USER_HOME/.bashrc"
+if [ -f "$BASHRC" ]; then
+  # Remove previous entry if exists to avoid duplicates
+  sed -i '/Spotipy\/run.sh/d' "$BASHRC"
+  
+  echo "" >> "$BASHRC"
+  echo "# Start Spotipy Server in background on login if not running" >> "$BASHRC"
+  echo "$RUN_SCRIPT" >> "$BASHRC"
+  chown "$REAL_USER":"$REAL_USER" "$BASHRC"
+  echo "Autostart erfolgreich in $BASHRC eingetragen."
+fi
 
 # 8. Configure HDMI 0 Kiosk Mode (Chromium Autostart)
 echo "8. Richte HDMI 0 Kiosk-Modus ein..."
