@@ -57,7 +57,8 @@ amixer cset numid=3 1 || true
 
 # 4. Install ASP.NET Core 8 Runtime
 echo "4. Installiere .NET 8 ASP.NET Core Runtime..."
-if ! command -v dotnet &> /dev/null; then
+# Check if dotnet works, if not install it
+if ! command -v dotnet &> /dev/null || ! dotnet --list-runtimes &> /dev/null; then
   echo "Lade .NET Installationsskript herunter..."
   curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
   chmod +x dotnet-install.sh
@@ -68,37 +69,43 @@ if ! command -v dotnet &> /dev/null; then
   su - "$REAL_USER" -c "bash $APP_DIR/dotnet-install.sh --channel 8.0 --runtime aspnetcore"
   
   # Create symlink so dotnet is globally accessible
+  rm -f /usr/bin/dotnet
   if [ -d "$USER_HOME/.dotnet" ]; then
     ln -sf "$USER_HOME/.dotnet/dotnet" /usr/bin/dotnet
     echo ".NET erfolgreich unter /usr/bin/dotnet verlinkt."
   fi
-  rm dotnet-install.sh
+  rm -f dotnet-install.sh
 else
-  echo ".NET ist bereits installiert: $(dotnet --version)"
+  echo ".NET ist bereits installiert und funktionsfähig."
 fi
 
 # 5. Download and install Librespot
 echo "5. Installiere librespot (Spotify Connect Daemon)..."
-ARCH=$(uname -m)
-LIBRESPOT_VERSION="v0.4.2"
-DOWNLOAD_URL=""
-
-if [ "$ARCH" = "x86_64" ]; then
-  DOWNLOAD_URL="https://github.com/librespot-org/librespot/releases/download/${LIBRESPOT_VERSION}/librespot-linux-x86_64.tar.gz"
-elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-  DOWNLOAD_URL="https://github.com/librespot-org/librespot/releases/download/${LIBRESPOT_VERSION}/librespot-linux-arm64.tar.gz"
+if ! command -v librespot &> /dev/null; then
+  echo "Installiere librespot über das Raspotify-Repository..."
+  
+  # Install prerequisite: gpg
+  apt-get install -y gpg
+  
+  # Add Raspotify keyring and repository
+  curl -sL https://dtcooper.github.io/raspotify/key.asc | gpg --dearmor --yes -o /usr/share/keyrings/raspotify-archive-keyring.gpg
+  echo "deb [signed-by=/usr/share/keyrings/raspotify-archive-keyring.gpg] https://dtcooper.github.io/raspotify raspotify main" | tee /etc/apt/sources.list.d/raspotify.list
+  
+  # Install raspotify package which provides librespot binary
+  apt-get update
+  apt-get install -y raspotify
 else
-  # 32-bit Pi OS fallback
-  DOWNLOAD_URL="https://github.com/librespot-org/librespot/releases/download/${LIBRESPOT_VERSION}/librespot-linux-armhf.tar.gz"
+  echo "librespot ist bereits installiert."
 fi
 
-echo "Lade librespot für Architektur ($ARCH) herunter..."
-wget -qO librespot.tar.gz "$DOWNLOAD_URL"
-tar -xzf librespot.tar.gz
-mv librespot /usr/local/bin/librespot
-chmod +x /usr/local/bin/librespot
-rm -f librespot.tar.gz
-echo "librespot erfolgreich unter /usr/local/bin/librespot installiert."
+# Stop and disable the default raspotify background service
+# because our Spotipy C# application will launch and control its own custom librespot instance.
+if systemctl is-active --quiet raspotify.service 2>/dev/null; then
+  systemctl stop raspotify.service || true
+fi
+if systemctl is-enabled --quiet raspotify.service 2>/dev/null; then
+  systemctl disable raspotify.service || true
+fi
 
 # 6. Publish C# Web Application
 echo "6. Kompiliere C# Projekt (Publishing)..."
