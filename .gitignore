@@ -1,0 +1,19 @@
+# Ignore C# build directories
+bin/
+obj/
+publish/
+
+# Ignore local secret files
+.env
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE settings
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
