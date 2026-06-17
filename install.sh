@@ -167,7 +167,7 @@ fi
 # Go to publish directory and run in background
 cd "$APP_DIR/publish"
 export PATH="\$PATH:\$HOME/.dotnet"
-nohup /usr/bin/dotnet Spotipy.dll > /dev/null 2>&1 &
+nohup /usr/bin/dotnet Spotipy.dll > "$APP_DIR/spotipy.log" 2>&1 &
 EOF
 
 chmod +x "$RUN_SCRIPT"
@@ -192,7 +192,7 @@ echo "8. Richte HDMI 0 Kiosk-Modus ein..."
 # Install chromium-browser if not installed (for kiosk mode display)
 apt-get install -y chromium-browser || apt-get install -y chromium || true
 
-KIOSK_CMD="chromium-browser --kiosk --noerrdialogs --disable-infobars --no-first-run --ozone-platform=wayland --enable-features=UseOzonePlatform http://localhost:5000/hdmi"
+KIOSK_CMD="chromium-browser --kiosk --noerrdialogs --disable-infobars --no-first-run http://localhost:5000/hdmi"
 
 # 8a. Autostart for X11 / LXDE-pi
 LXDE_DIR="$USER_HOME/.config/lxsession/LXDE-pi"
