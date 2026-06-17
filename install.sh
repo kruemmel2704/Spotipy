@@ -29,7 +29,7 @@ if [ ! -f "Spotipy.csproj" ]; then
   mkdir -p "$USER_HOME/Spotipy/publish"
   
   # Download release ZIP
-  wget -q --show-progress -O "$USER_HOME/Spotipy/Spotipy.zip" "https://github.com/kruemmel2704/Spotipy/releases/latest/download/Spotipy.zip"
+  wget -q --show-progress -O "$USER_HOME/Spotipy/Spotipy.zip" "https://github.com/kruemmel2704/Spotipy/releases/latest/download/Spotipy.zip?v=$(date +%s)"
   
   # Extract directly to the publish directory
   unzip -o -q "$USER_HOME/Spotipy/Spotipy.zip" -d "$USER_HOME/Spotipy/publish"
