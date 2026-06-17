@@ -55,16 +55,16 @@ echo "3. Konfiguriere Audio-Ausgang auf Klinkenbuchse (AudioJack)..."
 # On modern Pi OS Bookworm with Pipewire, this is fallback but useful.
 amixer cset numid=3 1 || true
 
-# 4. Install ASP.NET Core 8 Runtime
-echo "4. Installiere .NET 8 ASP.NET Core Runtime..."
-# Check if dotnet works, if not install it
-if ! command -v dotnet &> /dev/null || ! dotnet --list-runtimes &> /dev/null; then
+# 4. Install .NET 8 SDK (required to build the project)
+echo "4. Installiere .NET 8 SDK systemweit..."
+# Check if dotnet SDK works, if not install it
+if ! command -v dotnet &> /dev/null || ! dotnet --list-sdks &> /dev/null; then
   echo "Lade .NET Installationsskript herunter..."
   curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
   chmod +x dotnet-install.sh
   
-  echo "Installiere .NET 8 Runtime systemweit..."
-  ./dotnet-install.sh --channel 8.0 --runtime aspnetcore --install-dir /usr/share/dotnet
+  echo "Installiere .NET 8 SDK systemweit..."
+  ./dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet
   
   # Create symlink so dotnet is globally accessible
   rm -f /usr/bin/dotnet
@@ -72,7 +72,7 @@ if ! command -v dotnet &> /dev/null || ! dotnet --list-runtimes &> /dev/null; th
   echo ".NET erfolgreich unter /usr/bin/dotnet verlinkt."
   rm -f dotnet-install.sh
 else
-  echo ".NET ist bereits installiert und funktionsfähig."
+  echo ".NET SDK ist bereits installiert und funktionsfähig."
 fi
 
 # 5. Download and install Librespot
