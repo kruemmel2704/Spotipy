@@ -28,9 +28,28 @@ namespace Spotipy
 
             var builder = WebApplication.CreateBuilder(args);
 
-            // Configure the web server to listen on port 5000 on all interfaces
-            // so it can be reached via Raspberry Pi's IP address on local network.
-            builder.WebHost.UseUrls("http://0.0.0.0:5000");
+            // Configure Kestrel to listen on HTTP (5000) and HTTPS (5001)
+            builder.WebHost.ConfigureKestrel(serverOptions =>
+            {
+                serverOptions.ListenAnyIP(5000);
+                serverOptions.ListenAnyIP(5001, listenOptions =>
+                {
+                    var pfxPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "spotipy.pfx");
+                    if (!File.Exists(pfxPath))
+                    {
+                        pfxPath = Path.Combine(Directory.GetCurrentDirectory(), "spotipy.pfx");
+                    }
+
+                    if (File.Exists(pfxPath))
+                    {
+                        listenOptions.UseHttps(pfxPath, "spotipy");
+                    }
+                    else
+                    {
+                        listenOptions.UseHttps();
+                    }
+                });
+            });
 
             // Add services to the container
             builder.Services.AddControllers();

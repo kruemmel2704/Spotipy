@@ -54,8 +54,8 @@ echo "1. Aktualisiere Paketquellen..."
 apt-get update
 
 # 2. Install ALSA utilities & dependencies for audio
-echo "2. Installiere Audio-Abhängigkeiten (ALSA)..."
-apt-get install -y alsa-utils libasound2 libasound2-dev curl wget tar
+echo "2. Installiere Audio-Abhängigkeiten (ALSA) & OpenSSL..."
+apt-get install -y alsa-utils libasound2 libasound2-dev curl wget tar openssl
 
 # 3. Force audio jack output (analog out) on Pi 4B
 echo "3. Konfiguriere Audio-Ausgang auf Klinkenbuchse (AudioJack)..."
@@ -111,10 +111,34 @@ if systemctl is-enabled --quiet raspotify.service 2>/dev/null; then
   systemctl disable raspotify.service || true
 fi
 
-# 6. Set execute permissions for publish directory
+# 6. Set execute permissions for publish directory & generate SSL certificate
 echo "6. Bereite veröffentlichte Anwendungsdateien vor..."
 chown -R "$REAL_USER":"$REAL_USER" "$APP_DIR/publish"
 chmod +x "$APP_DIR/publish/Spotipy.dll" || true
+
+# Generate self-signed SSL certificate for HTTPS if not present
+if [ ! -f "$APP_DIR/publish/spotipy.pfx" ]; then
+  echo "Erstelle selbstsigniertes SSL-Zertifikat für HTTPS..."
+  
+  # Generate key and cert
+  openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes \
+    -keyout "$APP_DIR/publish/spotipy.key" \
+    -out "$APP_DIR/publish/spotipy.crt" \
+    -subj "/CN=Spotipy" 2>/dev/null
+    
+  # Package into PKCS12 (.pfx)
+  openssl pkcs12 -export \
+    -out "$APP_DIR/publish/spotipy.pfx" \
+    -inkey "$APP_DIR/publish/spotipy.key" \
+    -in "$APP_DIR/publish/spotipy.crt" \
+    -passout pass:spotipy 2>/dev/null
+    
+  # Clean up raw key and cert files
+  rm -f "$APP_DIR/publish/spotipy.key" "$APP_DIR/publish/spotipy.crt"
+  
+  chown "$REAL_USER":"$REAL_USER" "$APP_DIR/publish/spotipy.pfx"
+  echo "SSL-Zertifikat erfolgreich generiert."
+fi
 
 # 7. Setup Autostart via .bashrc (replacing systemd)
 echo "7. Richte Autostart über .bashrc ein..."
@@ -220,10 +244,9 @@ echo "===================================================="
 echo " Spotipy Connect Client successfully installed!"
 echo " "
 echo " NÄCHSTE SCHRITTE:"
-echo " 1. Öffne die Steuerungs-Web-UI im Netzwerk: http://<raspberrypi-ip>:5000"
+echo " 1. Öffne die Steuerungs-Web-UI im Netzwerk: http://<raspberrypi-ip>:5000 oder https://<raspberrypi-ip>:5001"
 echo " 2. Trage dort unter 'Einstellungen' deine Spotify Developer Keys ein."
 echo " 3. Klicke auf 'Mit Spotify verbinden' zum Einloggen."
 echo " 4. Der HDMI-Bildschirm zeigt die Visualisierung vollautomatisch."
 echo "===================================================="
-EOF
 chmod +x /usr/local/bin/librespot || true
