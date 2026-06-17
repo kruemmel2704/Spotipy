@@ -28,7 +28,18 @@ namespace Spotipy.Controllers
 
         private string? ClientId => Environment.GetEnvironmentVariable("SPOTIFY_CLIENT_ID");
         private string? ClientSecret => Environment.GetEnvironmentVariable("SPOTIFY_CLIENT_SECRET");
-        private string RedirectUri => _configuration.GetValue<string>("SpotifySettings:RedirectUri") ?? "http://localhost:5000/api/auth/callback";
+        private string RedirectUri
+        {
+            get
+            {
+                var configuredUri = _configuration.GetValue<string>("SpotifySettings:RedirectUri");
+                if (!string.IsNullOrEmpty(configuredUri) && configuredUri != "http://localhost:5000/api/auth/callback")
+                {
+                    return configuredUri;
+                }
+                return $"{Request.Scheme}://{Request.Host}/api/auth/callback";
+            }
+        }
 
         // Initiates the Spotify Login OAuth Flow
         [HttpGet("login")]
